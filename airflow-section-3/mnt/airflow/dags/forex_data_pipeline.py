@@ -18,6 +18,9 @@ default_args = {
     "retry_delay": timedelta(minutes=5)
 }
 
+# Download forex rate with python
+# Download forex rates according to the currencies we want to watch
+# described in the file forex_currencies.csv
 def download_rates():
     BASE_URL = "https://gist.githubusercontent.com/marclamberti/f45f872dea4dfd3eaa015a4a1af4b39b/raw/"
     ENDPOINTS = {
@@ -42,8 +45,10 @@ with DAG("forex_data_pipeline",
          schedule_interval="@daily",
          default_args=default_args,
          catchup=False) as dag:
-
+    
     # Ensure you have configured an HTTP connection named "forex_api"
+    # Checking availability of forex rates
+    # creating a task
     is_forex_rates_available = HttpSensor(
         task_id="is_forex_rates_available",
         http_conn_id="forex_api",
@@ -53,7 +58,8 @@ with DAG("forex_data_pipeline",
         timeout=20
     )
 
-    # creating a new variable
+    # creating a task
+    # Checking availabilty of the file having currencies to watch
     is_forex_currencies_file_available = FileSensor(
         task_id="is_forex_currencies_file_available",
         fs_conn_id="forex_path",
@@ -62,35 +68,8 @@ with DAG("forex_data_pipeline",
         timeout=20
     )
 
+    # creating a task
     download_rates = PythonOperator(
         task_id="dowloading_rates",
         python_callable=dowloading_rates
-    )
-
-    saving_rates = BashOperator(
-        task_id="saving_rates",
-        bash_command="""
-            hdfs dfs -mkdir -p /forex && \
-                hdfs dfs -put -f $AIRFLOW_HOME/dags/files/forex_rates.json/forex
-        """
-    )
-
-    creating_forex_rates_table = HiveOperator(
-        task_id="creating_forex_rates_table",
-        hive_cli_conn_id="hive_conn",
-        hql="""
-            CREATE EXTERNAL TABLE IF NOT EXISTS forex_rates(
-                base STRING,
-                last_update DATE,
-                eur DOUBLE,
-                usd DOUBLE,
-                nzd DOUBLE,
-                gbp DOUBLE,
-                jpy DOUBLE,
-                cad DOUBLE
-                )
-            ROW FORMAT DELIMITED
-            FIELDS TERMINATED BY ','
-            STORED AS TEXTFILE
-        """
     )
