@@ -75,11 +75,9 @@ with DAG("forex_data_pipeline",
     )
 
     saving_rates = BashOperator(
-    task_id="saving_rates",
-    bash_command="""
-        echo "Creating directory in HDFS..."
-        hdfs dfs -mkdir -p hdfs://localhost:32762/forex && \
-        echo "Uploading file to HDFS..."
-        hdfs dfs -put -f /opt/airflow/dags/files/forex_rates.json hdfs://localhost:32762/forex
-        """
-)
+        task_id="saving_rates",
+        bash_command="""
+            hdfs dfs -mkdir -p /forex && \
+            hdfs dfs -put -f $AIRFLOW_HOME/dags/files/forex_rates.json /forex
+            """
+    )
