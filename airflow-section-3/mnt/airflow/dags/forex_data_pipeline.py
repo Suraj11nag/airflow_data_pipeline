@@ -69,7 +69,17 @@ with DAG("forex_data_pipeline",
     )
 
     # creating a task
-    download_rates = PythonOperator(
-        task_id="dowloading_rates",
-        python_callable=dowloading_rates
+    downloading_rates = PythonOperator(
+        task_id="downloading_rates",
+        python_callable=download_rates
     )
+
+    saving_rates = BashOperator(
+    task_id="saving_rates",
+    bash_command="""
+        echo "Creating directory in HDFS..."
+        hdfs dfs -mkdir -p hdfs://localhost:32762/forex && \
+        echo "Uploading file to HDFS..."
+        hdfs dfs -put -f /opt/airflow/dags/files/forex_rates.json hdfs://localhost:32762/forex
+        """
+)
