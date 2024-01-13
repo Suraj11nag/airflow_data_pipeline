@@ -5,6 +5,8 @@ from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
 from airflow.providers.apache.hive.operators.hive import HiveOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+from airflow.operators.email import EmailOperator
+from airflow.providers.slack.operators.slack_webhook import SlackWebhookOperator
 
 from datetime import datetime, timedelta
 import csv
@@ -110,4 +112,18 @@ with DAG("forex_data_pipeline",
         application="/opt/airflow/dags/scripts/forex_processing.py",
         conn_id="spark_conn",
         verbose=False
+    )
+
+    send_email_notification = EmailOperator(
+        task_id="send_email_notification",
+        to="airflow_course@yopmail.com",
+        subject="forex_data_pipeline",
+        html_content="<h3>forex_data_pipeline</h3>"
+    )
+
+    send_slack_notification = SlackWebhookOperator(
+        task_id="send_slack_notification",
+        http_conn_id="slack_conn",
+        message=_get_message(),
+        channel="#monitoring"
     )
